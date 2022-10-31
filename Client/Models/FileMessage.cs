@@ -10,8 +10,6 @@ namespace Client.Models {
         
         public string Name { get; set; }
 
-        public int Size { get; set; }
-
         public int Count { get; set; }
 
         public int TotalCount { get; set; }

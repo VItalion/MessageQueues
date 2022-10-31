@@ -9,7 +9,11 @@ namespace DataCaptureService.Tools {
 
         //max message size is 512 mb but I think use so big message is bad idea
         //proof https://github.com/rabbitmq/rabbitmq-server/issues/147
-        private const int BufferSize = 8 * 1024 * 1024;     //8 mb
+        private const int BufferSize = 8 * 1024 * 1024;     //8 Mb
+        private const int MaxShortWaitAttemptCount = 5;     //for documents
+        private const int MaxLongWaitAttemptCount = 10;     //for large files
+
+        private int _attemptCount = 0;
 
         public Messenger(string uri) {
             _factory = new ConnectionFactory();
@@ -29,6 +33,7 @@ namespace DataCaptureService.Tools {
                     body: bytes);
             } catch (Exception ex) {
                 //log ewxception
+                Console.WriteLine(ex.ToString());
             } finally {
                 channel.Close();
                 connection.Close();
@@ -48,7 +53,8 @@ namespace DataCaptureService.Tools {
                     var count = 0;
                     var currentSendedSize = 0;
                     while (currentSendedSize < s.Length) {
-                        var bytes = new byte[BufferSize];
+                        var size = currentSendedSize + BufferSize < s.Length ? BufferSize : s.Length - currentSendedSize;
+                        var bytes = new byte[size];
                         s.Read(bytes, 0, bytes.Length);
                         currentSendedSize += bytes.Length;
                         count++;
@@ -63,6 +69,22 @@ namespace DataCaptureService.Tools {
                         SendMessage(channel, message);
                     }
                 }
+                _attemptCount = 0;
+            } catch (IOException ex) {
+                //FileWatcher raise file created event when coping begin and sometimes file explorer does not have time to unlock copied file
+                if (_attemptCount == MaxLongWaitAttemptCount) {
+                    Console.WriteLine(ex.ToString());
+                    return;
+                } else if (_attemptCount >= MaxShortWaitAttemptCount) {
+                    Thread.Sleep(TimeSpan.FromMinutes(1));
+                    _attemptCount++;
+                    SendLargeFile(file);
+                } else {
+                    Thread.Sleep(1000);
+                    _attemptCount++;
+                    SendLargeFile(file);
+                }
+
 
             } catch (Exception ex) {
                 //log ewxception

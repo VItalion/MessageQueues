@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Client": {
+      "commandName": "Project",
+      "commandLineArgs": "amqp://guest:guest@localhost:5672\r\nD:\\rabbit_result_test"
+    }
+  }
+}

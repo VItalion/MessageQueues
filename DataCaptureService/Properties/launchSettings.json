@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "DataCaptureService": {
+      "commandName": "Project",
+      "commandLineArgs": "D:\\rabbit_test\r\namqp://guest:guest@localhost:5672"
+    }
+  }
+}
